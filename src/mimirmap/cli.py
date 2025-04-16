@@ -1,6 +1,6 @@
 import argparse
 import os
-from mimirmap.old_core import (
+from mimirmap.core import (
     load_midas_model,
     estimate_depth,
     get_depth_at_pixel,
@@ -175,7 +175,6 @@ def main():
     # Print Google Maps link
     maps_link = f"https://www.google.com/maps/search/?api=1&query={lat},{lon}"
     print(f"\nView on Google Maps: {maps_link}")
-
 
 if __name__ == "__main__":
     main()
