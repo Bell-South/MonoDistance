@@ -56,3 +56,5 @@ examples/output/
 # OS specific files
 .DS_Store
 Thumbs.db
+#repomix
+repomix-output.txt

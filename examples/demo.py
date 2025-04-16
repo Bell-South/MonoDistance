@@ -10,7 +10,7 @@ import os
 import argparse
 import cv2
 import matplotlib.pyplot as plt
-from mimirmap.core import (
+from mimirmap.old_core import (
     load_midas_model,
     estimate_depth,
     calculate_depth_confidence,

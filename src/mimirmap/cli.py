@@ -1,6 +1,6 @@
 import argparse
 import os
-from mimirmap.core import (
+from mimirmap.old_core import (
     load_midas_model,
     estimate_depth,
     get_depth_at_pixel,

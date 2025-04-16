@@ -15,7 +15,7 @@ import cv2
 import tempfile
 from unittest.mock import patch, MagicMock
 
-from mimirmap import core
+from mimirmap import old_core
 
 @pytest.fixture
 def sample_image():
@@ -65,7 +65,7 @@ def test_estimate_depth(sample_image, mock_midas_model):
         mock_interpolate.return_value.squeeze.return_value.cpu.return_value.numpy.return_value = np.ones((480, 640))
         
         # Test without auto-calibration
-        img, depth_map = core.estimate_depth(
+        img, depth_map = old_core.estimate_depth(
             sample_image, mock_midas_model[0], mock_midas_model[1], 
             auto_calibrate=False
         )[:2]
@@ -94,7 +94,7 @@ def test_load_midas_model():
         
         try:
             # Call the function
-            model, transform = core.load_midas_model()
+            model, transform = old_core.load_midas_model()
             
             # Check results
             assert model is not None
@@ -110,25 +110,25 @@ def test_load_midas_model():
 def test_get_fov_from_camera_params():
     """Test camera FOV parameter retrieval."""
     # Test known camera model
-    fov_hero8 = core.get_fov_from_camera_params("HERO8")
+    fov_hero8 = old_core.get_fov_from_camera_params("HERO8")
     assert fov_hero8["diagonal"] == 80
     assert fov_hero8["horizontal"] == 69.5
     assert fov_hero8["vertical"] == 49.8
     
     # Test unknown camera model (should use DEFAULT)
-    fov_unknown = core.get_fov_from_camera_params("UNKNOWN_MODEL")
+    fov_unknown = old_core.get_fov_from_camera_params("UNKNOWN_MODEL")
     assert fov_unknown["diagonal"] == 80
     assert fov_unknown["horizontal"] == 69.5
     assert fov_unknown["vertical"] == 49.8
     
     # Test case insensitivity
-    fov_lowercase = core.get_fov_from_camera_params("hero9")
+    fov_lowercase = old_core.get_fov_from_camera_params("hero9")
     assert fov_lowercase["diagonal"] == 84
 
 
 def test_get_camera_parameters():
     """Test camera intrinsic parameter calculation."""
-    fx, fy, cx, cy = core.get_camera_parameters("HERO8", (2666, 2000))
+    fx, fy, cx, cy = old_core.get_camera_parameters("HERO8", (2666, 2000))
     
     # Basic checks
     assert fx > 0
@@ -137,7 +137,7 @@ def test_get_camera_parameters():
     assert cy == 2000 / 2  # Should be image center y
     
     # Test with default resolution
-    fx2, fy2, cx2, cy2 = core.get_camera_parameters("HERO8")
+    fx2, fy2, cx2, cy2 = old_core.get_camera_parameters("HERO8")
     assert fx2 > 0
     assert fy2 > 0
 
@@ -145,19 +145,19 @@ def test_get_camera_parameters():
 def test_calculate_ground_distance():
     """Test ground plane distance calculation."""
     # Test with typical values
-    distance = core.calculate_ground_distance(v=480, image_height=720, 
+    distance = old_core.calculate_ground_distance(v=480, image_height=720, 
                                             camera_height=1.5, pitch_deg=15, 
                                             v_fov_deg=60)
     assert distance > 0
     
     # Test point at horizon (should return infinite distance)
-    horizon_distance = core.calculate_ground_distance(v=360, image_height=720, 
+    horizon_distance = old_core.calculate_ground_distance(v=360, image_height=720, 
                                                     camera_height=1.5, pitch_deg=0, 
                                                     v_fov_deg=60)
     assert horizon_distance == float('inf')
     
     # Test point above horizon (should return infinite distance)
-    above_horizon = core.calculate_ground_distance(v=300, image_height=720, 
+    above_horizon = old_core.calculate_ground_distance(v=300, image_height=720, 
                                                  camera_height=1.5, pitch_deg=0, 
                                                  v_fov_deg=60)
     assert above_horizon == float('inf')
@@ -166,12 +166,12 @@ def test_calculate_ground_distance():
 def test_project_gps():
     """Test GPS coordinate projection."""
     # Test northward projection
-    lat1, lon1 = core.project_gps(lat=0.0, lon=0.0, bearing=0.0, distance_m=111320)
+    lat1, lon1 = old_core.project_gps(lat=0.0, lon=0.0, bearing=0.0, distance_m=111320)
     assert abs(lat1 - 1.0) < 0.01  # ~1 degree north (111.32 km at equator)
     assert abs(lon1) < 0.01  # Longitude should be almost unchanged
     
     # Test eastward projection
-    lat2, lon2 = core.project_gps(lat=0.0, lon=0.0, bearing=90.0, distance_m=111320)
+    lat2, lon2 = old_core.project_gps(lat=0.0, lon=0.0, bearing=90.0, distance_m=111320)
     assert abs(lat2) < 0.01  # Latitude should be almost unchanged
     assert abs(lon2 - 1.0) < 0.01  # ~1 degree east at equator
 
@@ -179,14 +179,14 @@ def test_project_gps():
 def test_pixel_to_camera_coords():
     """Test conversion from pixel to camera coordinates."""
     # Test with image center
-    center_coords = core.pixel_to_camera_coords(u=100, v=100, Z=10, 
+    center_coords = old_core.pixel_to_camera_coords(u=100, v=100, Z=10, 
                                               fx=200, fy=200, cx=100, cy=100)
     assert abs(center_coords[0]) < 1e-6  # Should be very close to optical axis
     assert abs(center_coords[1]) < 1e-6
     assert abs(center_coords[2] - 10) < 1e-6  # Z should be unchanged
     
     # Test with offset from center
-    offset_coords = core.pixel_to_camera_coords(u=150, v=200, Z=10, 
+    offset_coords = old_core.pixel_to_camera_coords(u=150, v=200, Z=10, 
                                               fx=200, fy=200, cx=100, cy=100)
     assert offset_coords[0] > 0  # Right of center should be positive X
     assert offset_coords[1] > 0  # Below center should be positive Y (if Y down)
@@ -197,23 +197,23 @@ def test_apply_orientation():
     """Test application of camera orientation to points."""
     # Test with zero rotation
     point = np.array([1.0, 2.0, 3.0])
-    rotated = core.apply_orientation(point, yaw=0, pitch=0, roll=0)
+    rotated = old_core.apply_orientation(point, yaw=0, pitch=0, roll=0)
     assert np.allclose(rotated, point)  # Should be unchanged
     
     # Test with 90 degree yaw (rotate around Z axis)
-    rotated = core.apply_orientation(np.array([1.0, 0.0, 0.0]), yaw=90, pitch=0, roll=0)
+    rotated = old_core.apply_orientation(np.array([1.0, 0.0, 0.0]), yaw=90, pitch=0, roll=0)
     assert np.allclose(rotated, [0.0, 1.0, 0.0], atol=1e-5)  # Changed sign
 
 def test_local_to_gps():
     """Test conversion from local ENU coordinates to GPS."""
     # Test with zero offset
-    lat, lon, alt = core.local_to_gps(offset=[0, 0, 0], lat0=10.0, lon0=20.0, alt0=30.0)
+    lat, lon, alt = old_core.local_to_gps(offset=[0, 0, 0], lat0=10.0, lon0=20.0, alt0=30.0)
     assert np.isclose(lat, 10.0)
     assert np.isclose(lon, 20.0)
     assert np.isclose(alt, 30.0)
     
     # Test with pure altitude change
-    lat, lon, alt = core.local_to_gps(offset=[0, 10, 0], lat0=10.0, lon0=20.0, alt0=30.0)
+    lat, lon, alt = old_core.local_to_gps(offset=[0, 10, 0], lat0=10.0, lon0=20.0, alt0=30.0)
     assert np.isclose(lat, 10.0)
     assert np.isclose(lon, 20.0)
     assert np.isclose(alt, 40.0)  # 30m + 10m up
@@ -225,19 +225,19 @@ def test_calculate_depth_confidence():
     depth_map = np.ones((100, 100), dtype=np.float32)
     
     # Test with uniform region (high confidence)
-    confidence = core.calculate_depth_confidence(x=50, y=50, depth_map=depth_map)
+    confidence = old_core.calculate_depth_confidence(x=50, y=50, depth_map=depth_map)
     assert confidence == 1.0
     
     # Test with non-uniform region (lower confidence)
     depth_map[45:55, 45:55] = np.random.normal(1.0, 0.5, (10, 10))
-    confidence = core.calculate_depth_confidence(x=50, y=50, depth_map=depth_map)
+    confidence = old_core.calculate_depth_confidence(x=50, y=50, depth_map=depth_map)
     assert 0.0 <= confidence <= 1.0
 
 
 def test_annotate_image():
     """Test image annotation."""
     img = np.zeros((100, 100, 3), dtype=np.uint8)
-    annotated = core.annotate_image(img, point=(50, 50), label="Test")
+    annotated = old_core.annotate_image(img, point=(50, 50), label="Test")
     
     # Check that the annotation was added (the pixel should no longer be black)
     assert not np.all(annotated[50, 50] == [0, 0, 0])
@@ -254,12 +254,12 @@ def test_estimate_depth(sample_image):
         return img, expected_depth, (320, 240), 10.0
     
     # Temporarily replace the function with our mock version
-    original_estimate_depth = core.estimate_depth
-    core.estimate_depth = mock_estimate_depth
+    original_estimate_depth = old_core.estimate_depth
+    old_core.estimate_depth = mock_estimate_depth
     
     try:
         # Now call our function using the actual interface
-        img, depth_map = core.estimate_depth(
+        img, depth_map = old_core.estimate_depth(
             sample_image, None, None, auto_calibrate=False
         )[:2]
         
@@ -269,7 +269,7 @@ def test_estimate_depth(sample_image):
         assert depth_map.shape == (480, 640)
     finally:
         # Restore the original function
-        core.estimate_depth = original_estimate_depth
+        old_core.estimate_depth = original_estimate_depth
 
 
 def test_estimate_object_gps(sample_image, mock_midas_model):
@@ -286,7 +286,7 @@ def test_estimate_object_gps(sample_image, mock_midas_model):
         )
         
         # Test without visualization
-        lat, lon, alt, confidence, distance, vis = core.estimate_object_gps(
+        lat, lon, alt, confidence, distance, vis = old_core.estimate_object_gps(
             image_path=sample_image,
             x=320, y=240,
             camera_lat=10.0, camera_lon=20.0, camera_alt=30.0,
